@@ -36,14 +36,3 @@ flowchart LR
     A --> B --> C --> D --> E --> F --> G
 ```
  
-Plain-text version:
- 
-```
-Initial access -> Execution/discovery -> C2 contact -> Payload by OS
- (npm install)     (install script,       (sfrclak     (macOS/Windows/Linux)
-                    OS check)              .com:8000)         |
-                                                              v
-                      Cleanup  <-  Beacons/commands  <-  Windows: PowerShell RAT
-                   (delete files,     (host info,          + Run key
-                    swap manifest)     remote commands)
-```
