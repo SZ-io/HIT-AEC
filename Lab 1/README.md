@@ -67,3 +67,24 @@ flowchart TD
 
 **6. Deletes its own files and swaps the manifest:**
 - Stealth: [T1070.004](https://attack.mitre.org/techniques/T1070/004/) - Indicator Removal: File Deletion
+
+# SOC investigation:
+
+## Behavior : Install script runs automatically (T1059.007, T1082)
+ 
+- **Telemetry:** Process creation / EDR logs (`npm` → `node setup.js`), software inventory (malicious `axios` or `plain-crypto-js` versions), CI/CD and `npm install` logs.
+- **Tier 1:** Check whether a listed malicious package version is present and whether the process chain runs from `node_modules/plain-crypto-js`. Escalate on a match.
+- **Tier 2:** Find when and where it was installed (lockfile, commit history), what the process did next, and which other hosts and pipelines pulled the same versions. Isolate hosts and rotate secrets.
+- **Not proof alone:** Many legitimate packages run install scripts.
+## Behavior : Contacts the C2 server, downloads a payload (T1071.001, T1105, T1571)
+ 
+- **Telemetry:** Proxy, firewall and DNS logs, and EDR network events, for `sfrclak[.]com:8000`.
+- **Tier 1:** Match the destination against the report's indicators (the report lists the IP as both .73 and .72, so check both) and identify which process connected. Block and escalate.
+- **Tier 2:** List every host that contacted the domain, match the timing to the install, and find which payload followed and whether it ran.
+- **Not proof alone:** Port 8000 is common in development, so the destination and the process behind the connection matter more.
+## Behavior : Windows PowerShell payload and Run key (T1059.001, T1059.005, T1564.003, T1036.003, T1547.001)
+ 
+- **Telemetry:** Process creation with command lines (`node` → `cscript` → `powershell`, hidden window), PowerShell script block logging, registry events for the `MicrosoftUpdate` Run key, and file creation for `%PROGRAMDATA%\wt.exe`.
+- **Tier 1:** Check whether PowerShell was launched by `node`, whether the Run key points outside Microsoft paths, and whether `wt.exe` is really a copy of PowerShell. Escalate on a match.
+- **Tier 2:** Decode the script, confirm persistence survives a reboot, build the full process timeline, and look for follow-on commands. Isolate the host and rebuild if needed.
+- **Not proof alone:** Hidden PowerShell and Run keys are also used by legitimate installers.
