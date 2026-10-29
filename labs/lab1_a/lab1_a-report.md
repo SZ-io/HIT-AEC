@@ -57,7 +57,21 @@ Initial finding count from clean baseline: 2
 <img width="1502" height="851" alt="image" src="https://github.com/user-attachments/assets/5ed164f8-e3a6-42c3-89fa-bd769c1bbf34" />
 
 ## 4. Simulator Observation
+
+With the simulator running, the log grew every ~10 seconds and the total finding count rose from 2 to 6 within about two minutes. New source IPs appeared: 172.18.0.21, 172.18.0.22 and 172.18.0.23 produced T1110 findings (172.18.0.22 accumulated 9 failed passwords across several bursts, since the rule has no time window), and 172.18.0.32 produced a T1046 finding. The results are random and keep changing, so unlike the controlled manual experiments they are not reproducible.
+
+<img width="1490" height="497" alt="image" src="https://github.com/user-attachments/assets/83ef8e1f-7c62-448b-be25-f76439c39efc" />
+
+<img width="1493" height="746" alt="image" src="https://github.com/user-attachments/assets/be5abe11-fb62-43b5-8733-cfa183515284" />
+
+
  
 ## 5. SOC Narrative
+
+The log shows three failed password attempts for the root account from 172.18.0.5 between 09:02:11 and 09:02:18,
+and a network scan notice from 172.18.0.7 against ports 22, 80, 443 and 3306 at 09:04:20. These are observed facts.
+
+The rule-based detector interpreted them as a candidate Brute Force attempt (T1110, Credential Access, High) and a candidate Network Service Discovery (T1046, Discovery, Medium). These labels are interpretation, not proof.
+
+The log cannot show whether any login succeeded, who was behind the attempts, or why. Three failures could be a mistyped password, and the scan finding depends only on text in the log, which could be false. An analyst should investigate before treating either as an attack.
  
-Claude finished the response
