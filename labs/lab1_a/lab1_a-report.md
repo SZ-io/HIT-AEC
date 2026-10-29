@@ -1,24 +1,3 @@
-Claude
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lab1 a report · MD
 # Lab 1a Report - SOC Detection & MITRE ATT&CK Mapping
  
 **Students**:
@@ -46,25 +25,37 @@ Initial finding count from clean baseline: 2
 ## 3. Controlled Experiments
  
 ### C1
-- Change:
-- Predicted:
-- Actual:
-- Explanation:
+- Change: Deleted the 09:02:11 "Failed password" line from 172.18.0.5, leaving two failed-password lines from that IP.
+- Predicted: T1110 disappears, T1046 remains, total findings becomes 1.
+- Actual: T1110 disappeared, T1046 remained, total findings was 1 (High 0, Medium 1).
+- Explanation: The rule needs 3 failures from the same source IP. With only 2, the threshold isn't reached. The T1046 rule doesn't depend on the failed-password lines, so it was unaffected.
+
+<img width="733" height="736" alt="image" src="https://github.com/user-attachments/assets/d01c8ae1-e2c2-499e-8c31-3b41a1599648" />
+
 ### C2
-- Change:
-- Predicted:
-- Actual:
-- Explanation:
+- Change: Changed the three "Failed password" lines to use different source IPs (172.18.0.5, 172.18.0.6, 172.18.0.8).
+- Predicted: No T1110 finding.
+- Actual: T1110 did not appear; only the T1046 finding remained (total 1).
+- Explanation: The detector counts failures per source IP. Each IP had only 1 failure, so none reached the threshold of 3.
+
+<img width="1495" height="662" alt="image" src="https://github.com/user-attachments/assets/066750bf-fddc-412b-a538-b6c134b562bb" />
+
 ### C3
-- Change:
-- Predicted:
-- Actual:
-- Explanation:
+- Change: Appended three "Failed password" lines from a new source IP, 192.0.2.55, to the end of the baseline log.
+- Predicted: A new T1110 finding for 192.0.2.55.
+- Actual: A new High-severity T1110 finding appeared for 192.0.2.55. Total findings went to 3: T1046 from 172.18.0.7, T1110 from 172.18.0.5 and T1110 from 192.0.2.55.
+- Explanation: The detector counts failures per source IP. 192.0.2.55 had 3 failures, which reaches the threshold, so it gets its own finding. The original 172.18.0.5 finding is unaffected.
+
+<img width="1498" height="817" alt="image" src="https://github.com/user-attachments/assets/948bad8c-bdca-4e81-9d5d-66344eeb9070" />
+
 ### C4
-- Change:
-- Predicted:
-- Actual:
-- Explanation:
+- Change: Appended one line to the log: "Network scan detected from 192.0.2.77 against ports 22,80,443".
+- Predicted: A new T1046 finding for 192.0.2.77.
+- Actual: A new Medium-severity T1046 finding appeared for 192.0.2.77. Total findings went to 4 (2 High T1110, 2 Medium T1046).
+- Explanation: The T1046 rule creates one finding for every line containing "network scan detected", whatever the IP. The detector doesn't check for a real scan, only the text in the log line.
+
+<img width="1502" height="851" alt="image" src="https://github.com/user-attachments/assets/5ed164f8-e3a6-42c3-89fa-bd769c1bbf34" />
+
 ## 4. Simulator Observation
  
 ## 5. SOC Narrative
