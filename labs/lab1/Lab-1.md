@@ -76,7 +76,7 @@ flowchart TD
 - **Tier 2:** Decode the script, confirm persistence survives a reboot, build the full process timeline, and look for follow-on commands. Isolate the host and rebuild if needed.
 - **Not proof alone:** Hidden PowerShell and Run keys are also used by legitimate installers.
 
-## 6. Uncertain mapping (put at the end)
+## 6. Uncertain mapping 
  
 **Behavior 5: in-memory loading of binaries**
  
