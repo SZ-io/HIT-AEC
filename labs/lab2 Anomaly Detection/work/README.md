@@ -158,7 +158,6 @@ The `scenario` column is kept outside the data and used only to explain the resu
 - **The 3 missed attacks:** the **mimic attack** (same MacBook, hours and city as User — it really looks normal, so missing it is expected), and two regular attacks that happened to draw normal-looking values (0-1 signals).
 - **The autoencoder is a little better because it raises fewer false alarms (5 vs 7).** Isolation Forest flagged all 4 business trips, because 1,000+ km is a huge numeric outlier. The autoencoder flagged only 2, because it learned from the trips in training that "abroad + MacBook + Safari in working hours" can be normal behaviour for User.
 - **The legitimate exceptions were handled well:** neither model flagged late work, a forgotten password or a trip inside Israel — exactly the logins that are only "a little bit odd".
-- **Compared with the old data:** with attack-only values (PK, Linux, Golan, Android) the autoencoder had F1 0.88 and Isolation Forest 0.00 — the autoencoder was mostly detecting "a value I have never seen". Now the two models are close (0.56 vs 0.50), which shows that neither has a shortcut anymore.
 
 ### Limitations
 
@@ -172,7 +171,7 @@ On this dataset and with these settings, the **autoencoder with embeddings** is 
 
 > AI detects patterns. Humans validate context and make the operational decision.
 
-## 6. How to run
+## 5. How to run
 
 The lab runs in Docker (JupyterLab with scipy, keras and torch).
 
@@ -181,7 +180,7 @@ cd "labs/lab2 Anomaly Detection"
 docker compose up --build
 ```
 
-Open <http://127.0.0.1:8888/lab> and go to the `work` folder. Open `AnomalyDetectionComparison_copy.ipynb` and run:
+Open <http://127.0.0.1:8888/lab> and go to the `work` folder. Open `AnomalyDetectionComparison.ipynb` and run:
 
 ```text
 Kernel → Restart Kernel and Run All Cells
