@@ -29,7 +29,7 @@ python -m pytest -q
  
 Result: `5 passed`.
  
-![Tests passed](photos/01_tests_passed.png)
+![Tests passed](photos/01_test_passed.png)
  
 ### 2.2 Starting the services
  
@@ -43,9 +43,7 @@ Result: `5 passed`.
  
 In every terminal I also ran `export MORPHEUS_INFERENCE_PROVIDER=deterministic`.
  
-![Docker containers running](photos/02_docker_ps.png)
-![Redpanda Console](photos/03_redpanda_console.png)
-![All services running](photos/04_services_running.png)
+![All services running](photos/services_running.png)
  
 ### 2.3 Dashboard
  
@@ -58,7 +56,7 @@ After fetching cases from Kafka, the dashboard showed:
 | Pending Human Review | 181 |
 | Meta-AI Escalations | 0 |
  
-![Dashboard](photos/05_dashboard.png)
+![Dashboard](photos/dashboard.png)
  
 ---
  
@@ -77,11 +75,28 @@ After fetching cases from Kafka, the dashboard showed:
  
 ### Tracing the case through Kafka
  
-I found the alert in the `morpheus.alerts` topic (offset 36) with all the raw
-event values (see 4.1), and later my decision in the `human.decisions` topic
-(see section 6).
+In Redpanda Console I found the alert in the `morpheus.alerts` topic
+(offset 36) with all the raw event values (see 4.1), and later my decision in
+the `human.decisions` topic (see section 6).
  
-![Alert in morpheus.alerts](photos/09_morpheus_alerts.png)
+For the other topics I used the audit file (`data/audit.jsonl`), where the
+orchestrator saves the same full case it publishes to Kafka, together with the
+orchestrator code:
+ 
+| Topic | What it holds for this case | Linked by |
+|---|---|---|
+| `raw.logs` | The original event from the generator. Not checked live; the alert keeps a copy of it as `source_event` (`event_id` `4d0e3586-...`) | `correlation_id` |
+| `morpheus.alerts` | The alert with raw values, risk score and reasons (checked live) | `alert_id`, `correlation_id` |
+| `agent.investigations` | The full case: alert, Threat Hunter findings, RAI, XAI, Meta-AI, status `awaiting_human_decision` | `alert_id`, `correlation_id` |
+| `agent.explanations` | The XAI output (`confidence` 1.0, provider `deterministic`) | `alert_id` |
+| `audit.rai` | The RAI decision | none |
+| `agent.meta_ai` | The Meta-AI review | none |
+| `human.decisions` | My decision and justification (checked live) | `alert_id`, `correlation_id` |
+ 
+The records in `audit.rai` and `agent.meta_ai` do not include `alert_id` or
+`correlation_id`, so they cannot be linked to a specific case on their own.
+ 
+![Alert in morpheus.alerts](photos/morpheus_alerts.png)
  
 ### Question C1: `alert_id` vs `correlation_id`
  
@@ -93,11 +108,17 @@ stays the same in every Kafka topic and every agent. It is used to follow one
 event through all the backend services, even in topics where there is no
 `alert_id` yet (for example `raw.logs`).
  
+### Case selection and synchronization (Part D)
+ 
+I selected `alert-0-95` with the checkbox in the first column of **All Cases**.
+The same `alert_id` appeared as the selected case in the **Human Decision
+Queue** ("REVIEW REQUIRED: alert-0-95 | Risk 100 | suspicious_process |
+host-02"), and the decision I recorded there appeared on the same row in
+**All Cases**, so the panels were synchronized.
+ 
 ---
  
 ## 4. Case analysis (Part E)
- 
-![XAI, RAI and Meta-AI](photos/07_xai_rai_metaai.png)
  
 ### 4.1 Detection evidence (E1)
  
@@ -198,7 +219,7 @@ escalations, so it works more like a rubber stamp than a real reviewer.
 Note: the first sentence was not included in the text I submitted in the
 dashboard. The decision itself is stored in the `decision` field.
  
-![Decision form](photos/08_decision.png)
+![Decision form](photos/decision.png)
  
 ---
  
@@ -209,7 +230,7 @@ dashboard. The decision itself is stored in the `decision` field.
 `alert-0-95` now shows `request_more_evidence` instead of `pending`, and
 Pending Human Review went down from 181 to 180.
  
-![Decision recorded](photos/10_decision_recorded.png)
+![Decision recorded](photos/decision_recorded.png)
  
 ### G2. Kafka
  
@@ -217,7 +238,7 @@ The decision appears in the `human.decisions` topic with all expected fields:
 `alert_id`, `correlation_id`, `decision`, `justification`, `risk_score`,
 `rai_recommendation`, `meta_ai_disposition`.
  
-![human.decisions topic](photos/11_human_decisions_topic.png)
+![human.decisions topic](photos/human_decisions_topic.png)
  
 ### G3. Audit file
  
@@ -235,7 +256,9 @@ python export_research_data.py
 Result: `Exported 1504 records to exports/morpheus_lite_20261126_091744.parquet`
 (1503 cases + 1 human decision).
  
-![Export](photos/12_export.png)
+My case can be connected across the system stages: in the audit data, the full
+case record and my human decision record both contain the same `alert_id`
+(`alert-0-95`) and `correlation_id` (`0ffb1919-4f8b-4fa8-b71d-025e8bc8405d`).
  
 **Problem found:** the first run failed with:
  
@@ -265,6 +288,12 @@ changed.
 3. **Possible lateral movement.** Right after my case, `alert-0-96` shows the
    same account (`svc-backup`) with the same event type and risk 100, but on
    `host-03`. This should be investigated together with my case.
+4. **The MITRE mapping is fixed.** The Threat Hunter always returns the same
+   three tactics (TA0006, TA0010, TA0004) for every alert, whatever the
+   findings are.
+5. **Kafka data is lost on shutdown.** `docker-compose.yml` has no volume for
+   Redpanda, so `docker compose down` deletes all topic data, even without
+   `-v`. After shutdown, the audit file is the only record of the run.
 ---
  
 ## 9. Reflection (Part I)
